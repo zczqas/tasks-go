@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -78,11 +79,54 @@ func (t *taskDB) insert(name, project string) error {
 	return err
 }
 
-func (t *taskDB) update(task task) error {
-	return nil
-}
-
 func (t *taskDB) delete(id uint) error {
 	_, err := t.db.Exec(`DELETE FROM tasks WHERE id = ?`, id)
 	return err
+}
+
+func (t *taskDB) update(task task) error {
+	orig, err := t.getTask(task.ID)
+	if err != nil {
+		return err
+	}
+
+	orig.merge(task)
+	_, err = t.db.Exec(
+		`UPDATE tasks SET name = ?, project = ?, status = ? WHERE id = ?`,
+		orig.Name,
+		orig.Project,
+		orig.Status,
+		orig.ID,
+	)
+
+	return err
+}
+
+func (orig *task) merge(t task) {
+	uValues := reflect.ValueOf(&t).Elem()
+	oValues := reflect.ValueOf(orig).Elem()
+	for i := 0; i < uValues.NumField(); i++ {
+		uField := uValues.Field(i).Interface()
+		if oValues.CanSet() {
+			if v, ok := uField.(int64); ok && uField != 0 {
+				oValues.Field(i).SetInt(v)
+			}
+			if v, ok := uField.(string); ok && uField != "" {
+				oValues.Field(i).SetString(v)
+			}
+		}
+	}
+}
+
+func (t *taskDB) getTask(id int) (task, error) {
+	var task task
+	err := t.db.QueryRow(`SELECT * FROM tasks WHERE id = ?`, id).Scan(
+		&task.ID,
+		&task.Name,
+		&task.Project,
+		&task.Status,
+		&task.Created,
+	)
+
+	return task, err
 }
