@@ -20,7 +20,7 @@ func (s status) String() string {
 }
 
 type task struct {
-	ID      int
+	ID      uint
 	Name    string
 	Project string
 	Status  string
@@ -105,7 +105,7 @@ func (t *taskDB) update(task task) error {
 func (orig *task) merge(t task) {
 	uValues := reflect.ValueOf(&t).Elem()
 	oValues := reflect.ValueOf(orig).Elem()
-	for i := 0; i < uValues.NumField(); i++ {
+	for i := range uValues.NumField() {
 		uField := uValues.Field(i).Interface()
 		if oValues.CanSet() {
 			if v, ok := uField.(int64); ok && uField != 0 {
@@ -118,7 +118,32 @@ func (orig *task) merge(t task) {
 	}
 }
 
-func (t *taskDB) getTask(id int) (task, error) {
+func (t *taskDB) getTasks() ([]task, error) {
+	var tasks []task
+
+	rows, err := t.db.Query(`SELECT * FROM tasks`)
+	if err != nil {
+		return tasks, fmt.Errorf("error getting tasks: %v", err)
+	}
+
+	for rows.Next() {
+		var task task
+		err = rows.Scan(
+			&task.ID,
+			&task.Name,
+			&task.Project,
+			&task.Status,
+			&task.Created,
+		)
+		if err != nil {
+			return tasks, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, err
+}
+
+func (t *taskDB) getTask(id uint) (task, error) {
 	var task task
 	err := t.db.QueryRow(`SELECT * FROM tasks WHERE id = ?`, id).Scan(
 		&task.ID,

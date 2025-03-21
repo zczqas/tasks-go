@@ -1,0 +1,82 @@
+package main
+
+import (
+	"database/sql"
+	"log"
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+)
+
+func TestDelete(t *testing.T) {
+	tests := []struct {
+		want task
+	}{
+		{
+			want: task{
+				ID:      1,
+				Name:    "get milk",
+				Project: "groceries",
+				Status:  "todo",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run((tt.want.Name), func(t *testing.T) {
+			tDB := setup()
+			defer teardown(tDB)
+			if err := tDB.insert(tt.want.Name, tt.want.Project); err != nil {
+				t.Fatalf("unable to insert tasks: %v", err)
+
+			}
+
+			tasks, err := tDB.getTasks()
+			if err != nil {
+				t.Fatalf("unable to get tasks: %v", err)
+			}
+
+			tt.want.Created = tasks[0].Created
+			if !reflect.DeepEqual(tasks[0], tt.want) {
+				t.Fatalf("want %v, got %v", tt.want, tasks[0])
+			}
+			if err := tDB.delete(tasks[0].ID); err != nil {
+				t.Fatalf("unable to delete task: %v", err)
+			}
+
+			tasks, err = tDB.getTasks()
+			if err != nil {
+				t.Fatalf("unable to get tasks: %v", err)
+			}
+			if len(tasks) != 0 {
+				t.Fatalf("expected tasks to be empty, got: %v", tasks)
+			}
+		})
+	}
+}
+
+func setup() *taskDB {
+	path := filepath.Join(os.TempDir(), "test.db")
+	db, err := sql.Open("sqlite3", path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	t := taskDB{
+		db:      db,
+		dataDir: path,
+	}
+	if !t.tableExists("tasks") {
+		err := t.createTable()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return &t
+}
+
+func teardown(t *taskDB) {
+	t.db.Close()
+	os.Remove(t.dataDir)
+}
