@@ -155,3 +155,28 @@ func (t *taskDB) getTask(id uint) (task, error) {
 
 	return task, err
 }
+
+func (t *taskDB) getTasksByStatus(status string) ([]task, error) {
+	var tasks []task
+
+	rows, err := t.db.Query("SELECT * FROM tasks WHERE status = ?", status)
+	if err != nil {
+		return tasks, fmt.Errorf("error getting tasks: %v", err)
+	}
+
+	for rows.Next() {
+		var task task
+		err = rows.Scan(
+			&task.ID,
+			&task.Name,
+			&task.Project,
+			&task.Status,
+			&task.Created,
+		)
+		if err != nil {
+			return tasks, err
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, err
+}
