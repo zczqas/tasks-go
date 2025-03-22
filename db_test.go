@@ -24,7 +24,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run((tt.want.Name), func(t *testing.T) {
+		t.Run(tt.want.Name, func(t *testing.T) {
 			tDB := setup()
 			defer teardown(tDB)
 			if err := tDB.insert(tt.want.Name, tt.want.Project); err != nil {
@@ -55,6 +55,40 @@ func TestDelete(t *testing.T) {
 		})
 	}
 }
+func TestGetTask(t *testing.T) {
+	tests := []struct {
+		want task
+	}{
+		{
+			want: task{
+				ID:      1,
+				Name:    "get milk",
+				Project: "groceries",
+				Status:  todo.String(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.want.Name, func(t *testing.T) {
+			tDB := setup()
+			defer teardown(tDB)
+			if err := tDB.insert(tt.want.Name, tt.want.Project); err != nil {
+				t.Fatalf("unable to insert tasks: %v", err)
+			}
+
+			task, err := tDB.getTask(1)
+			if err != nil {
+				t.Fatalf("unable to get task: %v", err)
+			}
+
+			tt.want.Created = task.Created
+			if !reflect.DeepEqual(task, tt.want) {
+				t.Fatalf("want %v, got %v", tt.want, task)
+			}
+		})
+	}
+}
 
 func setup() *taskDB {
 	path := filepath.Join(os.TempDir(), "test.db")
@@ -68,11 +102,12 @@ func setup() *taskDB {
 		dataDir: path,
 	}
 	if !t.tableExists("tasks") {
-		err := t.createTable()
+		err = t.createTable()
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
+
 	return &t
 }
 
