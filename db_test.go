@@ -90,6 +90,58 @@ func TestGetTask(t *testing.T) {
 	}
 }
 
+func TestUpdate(t *testing.T) {
+	tests := []struct {
+		new  *task
+		old  *task
+		want task
+	}{
+		{
+			new: &task{
+				ID:      1,
+				Name:    "strawberries",
+				Project: "",
+				Status:  "",
+			},
+			old: &task{
+				ID:      1,
+				Name:    "get milk",
+				Project: "groceries",
+				Status:  todo.String(),
+			},
+			want: task{
+				ID:      1,
+				Name:    "strawberries",
+				Project: "groceries",
+				Status:  todo.String(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.new.Name, func(t *testing.T) {
+			tDB := setup()
+			defer teardown(tDB)
+			if err := tDB.insert(tt.old.Name, tt.old.Project); err != nil {
+				t.Fatalf("unable to insert tasks: %v", err)
+			}
+			if err := tDB.update(*tt.new); err != nil {
+				t.Fatalf("unable to update task: %v", err)
+			}
+
+			task, err := tDB.getTask(tt.want.ID)
+			if err != nil {
+				t.Fatalf("unable to get task: %v", err)
+			}
+
+			tt.want.Created = task.Created
+			if !reflect.DeepEqual(task, tt.want) {
+				t.Fatalf("want %v, got %v", tt.want, task)
+			}
+		})
+	}
+}
+
 func setup() *taskDB {
 	path := filepath.Join(os.TempDir(), "test.db")
 	db, err := sql.Open("sqlite3", path)
@@ -101,12 +153,12 @@ func setup() *taskDB {
 		db:      db,
 		dataDir: path,
 	}
-	if !t.tableExists("tasks") {
-		err = t.createTable()
-		if err != nil {
-			log.Fatal(err)
-		}
+	// if !t.tableExists("tasks") {
+	err = t.createTable()
+	if err != nil {
+		log.Fatal(err)
 	}
+	// }
 
 	return &t
 }
