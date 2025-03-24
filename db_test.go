@@ -181,6 +181,42 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestMerge(t *testing.T) {
+	tests := []struct {
+		new  task
+		old  task
+		want task
+	}{
+		{
+			new: task{
+				ID:      1,
+				Name:    "strawberries",
+				Project: "",
+				Status:  "",
+			},
+			old: task{
+				ID:      1,
+				Name:    "get milk",
+				Project: "groceries",
+				Status:  todo.String(),
+			},
+			want: task{
+				ID:      1,
+				Name:    "strawberries",
+				Project: "groceries",
+				Status:  todo.String(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt.old.merge(tt.new)
+		if !reflect.DeepEqual(tt.old, tt.want) {
+			t.Fatalf("want %v, got %v", tt.want, tt.old)
+		}
+	}
+}
+
 func setup() *taskDB {
 	path := filepath.Join(os.TempDir(), "test.db")
 	db, err := sql.Open("sqlite3", path)
