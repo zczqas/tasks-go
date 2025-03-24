@@ -55,6 +55,7 @@ func TestDelete(t *testing.T) {
 		})
 	}
 }
+
 func TestGetTask(t *testing.T) {
 	tests := []struct {
 		want task
