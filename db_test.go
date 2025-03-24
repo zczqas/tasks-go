@@ -91,6 +91,44 @@ func TestGetTask(t *testing.T) {
 	}
 }
 
+func TestGetTasksByStatus(t *testing.T) {
+	tests := []struct {
+		want task
+	}{
+		{
+			want: task{
+				ID:      1,
+				Name:    "get milk",
+				Project: "groceries",
+				Status:  todo.String(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.want.Name, func(t *testing.T) {
+			tDB := setup()
+			defer teardown(tDB)
+			if err := tDB.insert(tt.want.Name, tt.want.Project); err != nil {
+				t.Fatalf("unable to insert tasks: %v", err)
+			}
+
+			tasks, err := tDB.getTasksByStatus(tt.want.Status)
+			if err != nil {
+				t.Fatalf("unable to get tasks: %v", err)
+			}
+			if len(tasks) < 1 {
+				t.Fatalf("expected at least one task, got: %v", tasks)
+			}
+
+			tt.want.Created = tasks[0].Created
+			if !reflect.DeepEqual(tasks[0], tt.want) {
+				t.Fatalf("want %v, got %v", tt.want, tasks[0])
+			}
+		})
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	tests := []struct {
 		new  *task
