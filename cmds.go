@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
 )
 
@@ -108,4 +111,63 @@ var updateCmd = &cobra.Command{
 		}
 		return t.update(newTask)
 	},
+}
+
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all your tasks",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		t, err := openDB(setupPath())
+		if err != nil {
+			return err
+		}
+
+		defer t.db.Close()
+
+		tasks, err := t.getTasks()
+		if err != nil {
+			return err
+		}
+		fmt.Print(setupTable(tasks))
+		return nil
+	},
+}
+
+func setupTable(tasks []task) *table.Table {
+	columns := []string{"ID", "Name", "Project", "Status", "Created At"}
+	var rows [][]string
+
+	for _, task := range tasks {
+		rows = append(rows, []string{
+			strconv.Itoa(int(task.ID)),
+			task.Name,
+			task.Project,
+			task.Status,
+			task.Created.Format("2001-01-01"),
+		})
+	}
+
+	t := table.New().
+		Border(lipgloss.HiddenBorder()).
+		Headers(columns...).
+		Rows(rows...).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			if row == 0 {
+				return lipgloss.NewStyle().
+					Foreground(lipgloss.Color("212")).
+					Border(lipgloss.NormalBorder()).
+					BorderTop(false).
+					BorderLeft(false).
+					BorderRight(false).
+					BorderBottom(true).
+					Bold(true)
+			}
+
+			if row%2 == 0 {
+				return lipgloss.NewStyle().Foreground(lipgloss.Color("246"))
+			}
+			return lipgloss.NewStyle()
+		})
+	return t
 }
