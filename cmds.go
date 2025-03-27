@@ -134,6 +134,16 @@ var listCmd = &cobra.Command{
 	},
 }
 
+var whereCmd = &cobra.Command{
+	Use:   "where",
+	Short: "Show where your tasks are stored",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		_, err := fmt.Println(setupPath())
+		return err
+	},
+}
+
 func setupTable(tasks []task) *table.Table {
 	columns := []string{"ID", "Name", "Project", "Status", "Created At"}
 	var rows [][]string
@@ -144,23 +154,19 @@ func setupTable(tasks []task) *table.Table {
 			task.Name,
 			task.Project,
 			task.Status,
-			task.Created.Format("2001-01-01"),
+			task.Created.Format("2006-01-02"),
 		})
 	}
 
 	t := table.New().
-		Border(lipgloss.HiddenBorder()).
+		Border(lipgloss.RoundedBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("241"))).
 		Headers(columns...).
 		Rows(rows...).
 		StyleFunc(func(row, col int) lipgloss.Style {
 			if row == 0 {
 				return lipgloss.NewStyle().
 					Foreground(lipgloss.Color("212")).
-					Border(lipgloss.NormalBorder()).
-					BorderTop(false).
-					BorderLeft(false).
-					BorderRight(false).
-					BorderBottom(true).
 					Bold(true)
 			}
 
@@ -170,4 +176,36 @@ func setupTable(tasks []task) *table.Table {
 			return lipgloss.NewStyle()
 		})
 	return t
+}
+
+func init() {
+	addCmd.Flags().StringP(
+		"project",
+		"p",
+		"",
+		"specify a project for your task",
+	)
+	rootCmd.AddCommand(addCmd)
+	rootCmd.AddCommand(listCmd)
+	updateCmd.Flags().StringP(
+		"name",
+		"n",
+		"",
+		"specify a name for your task",
+	)
+	updateCmd.Flags().StringP(
+		"project",
+		"p",
+		"",
+		"specify a project for your task",
+	)
+	updateCmd.Flags().IntP(
+		"status",
+		"s",
+		int(todo),
+		"specify a status for your task",
+	)
+	rootCmd.AddCommand(updateCmd)
+	rootCmd.AddCommand(whereCmd)
+	rootCmd.AddCommand(deleteCmd)
 }

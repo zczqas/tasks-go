@@ -28,7 +28,7 @@ func setupPath() string {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Using task directory: %s\n", taskDir)
+	// fmt.Printf("Using task directory: %s\n", taskDir)
 	return taskDir
 }
 
@@ -50,14 +50,14 @@ func openDB(path string) (*taskDB, error) {
 	}
 
 	t := taskDB{db: db, dataDir: path}
-	if !t.tableExists("tasks") {
-		err := t.createTable()
-		if err != nil {
-			return nil, err
-		}
+	// if !t.tableExists("tasks") {
+	err = t.createTable()
+	if err != nil {
+		return nil, err
 	}
+	// }
 
-	fmt.Println("Database opened successfully")
+	// fmt.Println("Database opened successfully")
 
 	return &t, nil
 }

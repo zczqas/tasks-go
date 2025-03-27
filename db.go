@@ -55,7 +55,7 @@ func (t *taskDB) tableExists(name string) bool {
 
 func (t *taskDB) createTable() error {
 	_, err := t.db.Exec(`
-	CREATE TABLE "tasks" ( 
+	CREATE TABLE IF NOT EXISTS "tasks" ( 
 		"id" INTEGER,
 		"name" TEXT NOT NULL, 
 		"project" TEXT, 
